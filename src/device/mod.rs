@@ -1,6 +1,8 @@
 mod mock;
+mod specs;
 
 pub use mock::MockHidrawDevice;
+pub use specs::{DeviceKind, DeviceSpec};
 
 use crate::error::QuadroError;
 use crate::protocol::{RawReport, RawStatusReport, RawVirtualSensorsReport};
@@ -17,4 +19,4 @@ pub trait HidrawDevice {
 mod linux;
 
 #[cfg(target_os = "linux")]
-pub use linux::{LinuxHidrawDevice, find_quadro};
+pub use linux::{LinuxHidrawDevice, find_device, find_quadro};

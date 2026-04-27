@@ -1,12 +1,12 @@
 # quadro-ctl
 
-CLI tool for bulk read/write operations on the [Aqua Computer QUADRO](https://www.aquacomputer.de/quadro.html) fan controller.
+CLI tool for bulk read/write operations on Aqua Computer fan controllers: [QUADRO](https://www.aquacomputer.de/quadro.html) (4 fans) and [OCTO](https://www.aquacomputer.de/octo.html) (8 fans).
 
-Controls the four fans (manual PWM or temperature curve) and feeds the firmware's **software sensors** with values read from the host OS (HDD temps, NVMe, CPU, etc.) so a curve can react to anything Linux can measure.
+Controls fans (manual PWM or temperature curve) and feeds the firmware's **software sensors** with values read from the host OS (HDD temps, NVMe, CPU, etc.) so a curve can react to anything Linux can measure.
 
 ## Why
 
-The sysfs/hwmon interface performs individual USB round-trips for each operation (~9 seconds each). Configuring all 4 fans via sysfs takes ~20 minutes. `quadro-ctl` talks to the device directly: one HID feature-report read + one feature-report write + one commit report (~18 seconds for the whole configuration).
+The sysfs/hwmon interface performs individual USB round-trips for each operation (~9 seconds each). Configuring all fans via sysfs takes ~20 minutes (QUADRO) or ~40 minutes (OCTO). `quadro-ctl` talks to the device directly: one HID feature-report read + one feature-report write + one commit report (~18 seconds for the whole configuration).
 
 It also supports things the kernel driver doesn't:
 
@@ -22,7 +22,7 @@ It also supports things the kernel driver doesn't:
 | `sensors set --config-file F` | Write software sensor values over USB bulk (report 0x04). |
 | `status` | Full device snapshot: sensor values (hardware + virtual), fan RPM/PWM/voltage/current, flow. Prints JSON. |
 
-Every command accepts `--device /dev/hidrawN` to pin a specific device. Without it, `quadro-ctl` scans `/dev/hidraw*` for VID `0x0c70` PID `0xf00d`.
+Every command accepts `--device /dev/hidrawN` to pin a specific device. Without it, `quadro-ctl` scans `/dev/hidraw*` for VID `0x0c70` and detects QUADRO (PID `0xf00d`) or OCTO (PID `0xf011`).
 
 Logs go to **stderr**; data (JSON) goes to **stdout** — pipe safely.
 
@@ -49,7 +49,7 @@ sudo quadro-ctl status
 }
 ```
 
-`sensor1..sensor4` are the four hardware temperature inputs. `virtual1..virtual16` are the firmware's 16 software-sensor slots (see below).
+`sensor1..sensor4` are the hardware temperature inputs (4 on both QUADRO and OCTO). `virtual1..virtual16` are the firmware's 16 software-sensor slots (see below). OCTO shows 8 fans; QUADRO shows 4.
 
 ### `fans get` — inspect the current fan configuration
 
@@ -151,7 +151,7 @@ The `sensor` field in a curve config selects the input for the fan:
 
 | Value  | Meaning |
 |--------|---------|
-| 0–3    | Hardware temperature sensors 1–4 (the four 2-pin inputs on the QUADRO) |
+| 0–3    | Hardware temperature sensors 1–4 (the 2-pin inputs on the device) |
 | 4      | Flow sensor |
 | 5–12   | Software sensors 1–8 (correspond to `virtual1`..`virtual8` in `status`) |
 | 13–19  | Invalid / reserved — fan will fall back |
@@ -169,7 +169,7 @@ The device uses centi-units almost everywhere:
 
 ## Running without root
 
-Both HID feature-report ioctls and USB bulk writes need privileged access by default. Either run under `sudo`, or install udev rules that grant access to the QUADRO (`/dev/hidraw*` and `/dev/bus/usb/<BUS>/<DEV>`) for a specific group.
+Both HID feature-report ioctls and USB bulk writes need privileged access by default. Either run under `sudo`, or install udev rules that grant access to the device (`/dev/hidraw*` and `/dev/bus/usb/<BUS>/<DEV>`) for a specific group.
 
 ## Building
 

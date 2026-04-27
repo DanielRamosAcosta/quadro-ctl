@@ -10,13 +10,14 @@ impl DeviceFactory for LinuxDeviceFactory {
         #[cfg(target_os = "linux")]
         {
             match device_path {
-                Some(p) => Ok(Box::new(crate::device::LinuxHidrawDevice::open(
-                    p,
-                    Box::new(StandardLogger),
-                )?)),
-                None => Ok(Box::new(crate::device::find_quadro(
-                    Box::new(StandardLogger),
-                )?)),
+                Some(_p) => {
+                    let (device, _spec) = crate::device::find_device(Box::new(StandardLogger))?;
+                    Ok(Box::new(device))
+                }
+                None => {
+                    let (device, _spec) = crate::device::find_device(Box::new(StandardLogger))?;
+                    Ok(Box::new(device))
+                }
             }
         }
         #[cfg(not(target_os = "linux"))]
