@@ -3,7 +3,7 @@ use std::os::unix::io::RawFd;
 
 use crate::device::{DeviceKind, DeviceSpec};
 use crate::error::QuadroError;
-use crate::protocol::{RawReport, RawStatusReport, RawVirtualSensorsReport, STATUS_REPORT_SIZE};
+use crate::protocol::{RawReport, RawStatusReport, RawVirtualSensorsReport};
 use crate::services::Logger;
 use super::HidrawDevice;
 
@@ -292,10 +292,10 @@ impl HidrawDevice for LinuxHidrawDevice {
     }
 
     fn read_status_report(&mut self) -> Result<RawStatusReport, QuadroError> {
-        let mut buf = vec![0u8; STATUS_REPORT_SIZE];
+        let mut buf = vec![0u8; self.spec.status_report_size];
         self.logger.info(&format!(
             "[device] reading status report ({} bytes)",
-            STATUS_REPORT_SIZE
+            self.spec.status_report_size
         ));
         let ret = unsafe {
             libc::read(self.fd, buf.as_mut_ptr() as *mut libc::c_void, buf.len())

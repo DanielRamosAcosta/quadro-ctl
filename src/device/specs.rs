@@ -1,8 +1,8 @@
 use crate::protocol::{
     CTRL_REPORT_ID, CTRL_REPORT_SIZE, FAN_CTRL_OFFSETS, QUADRO_FLOW_SENSOR_OFFSET,
     QUADRO_NUM_SENSORS, QUADRO_NUM_VIRTUAL_SENSORS, QUADRO_POWER_CYCLES, QUADRO_SENSOR_START,
-    QUADRO_VIRTUAL_SENSORS_START, QUADRO_FAN_SENSOR_OFFSETS, SECONDARY_REPORT_ID,
-    SECONDARY_REPORT,
+    QUADRO_VIRTUAL_SENSORS_START, QUADRO_FAN_SENSOR_OFFSETS, QUADRO_STATUS_REPORT_SIZE,
+    SECONDARY_REPORT_ID, SECONDARY_REPORT,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,6 +35,7 @@ pub struct DeviceSpec {
     pub product_id: u16,
     pub ctrl_report_id: u8,
     pub ctrl_report_size: usize,
+    pub status_report_size: usize,
     pub secondary_report_id: u8,
     pub secondary_report: &'static [u8],
     pub num_fans: usize,
@@ -69,6 +70,7 @@ impl DeviceSpec {
             product_id: 0xf00d,
             ctrl_report_id: CTRL_REPORT_ID,
             ctrl_report_size: CTRL_REPORT_SIZE,
+            status_report_size: QUADRO_STATUS_REPORT_SIZE,
             secondary_report_id: SECONDARY_REPORT_ID,
             secondary_report: &SECONDARY_REPORT,
             num_fans: 4,
@@ -89,7 +91,8 @@ impl DeviceSpec {
         use crate::protocol::{
             OCTO_CTRL_REPORT_SIZE, OCTO_FAN_CTRL_OFFSETS, OCTO_FAN_SENSOR_OFFSETS,
             OCTO_FLOW_SENSOR_OFFSET, OCTO_NUM_SENSORS, OCTO_NUM_VIRTUAL_SENSORS,
-            OCTO_POWER_CYCLES, OCTO_SENSOR_START, OCTO_VIRTUAL_SENSORS_START,
+            OCTO_POWER_CYCLES, OCTO_SENSOR_START, OCTO_STATUS_REPORT_SIZE,
+            OCTO_VIRTUAL_SENSORS_START,
         };
 
         DeviceSpec {
@@ -98,6 +101,7 @@ impl DeviceSpec {
             product_id: 0xf011,
             ctrl_report_id: CTRL_REPORT_ID,
             ctrl_report_size: OCTO_CTRL_REPORT_SIZE,
+            status_report_size: OCTO_STATUS_REPORT_SIZE,
             secondary_report_id: SECONDARY_REPORT_ID,
             secondary_report: &SECONDARY_REPORT,
             num_fans: 8,

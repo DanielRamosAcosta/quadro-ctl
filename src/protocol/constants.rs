@@ -22,6 +22,8 @@ pub const CHECKSUM_START: usize = 0x01;
 pub const CHECKSUM_OFFSET: usize = 0x3bf;
 
 pub const STATUS_REPORT_SIZE: usize = 0x3c1;
+pub const QUADRO_STATUS_REPORT_SIZE: usize = 0xDC;
+pub const OCTO_STATUS_REPORT_SIZE: usize = 0x147;
 pub const AQC_SERIAL_START: usize = 0x03;
 pub const AQC_FIRMWARE_VERSION: usize = 0x0D;
 pub const AQC_POWER_CYCLES: usize = 0x18;
