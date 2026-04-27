@@ -26,7 +26,7 @@ impl HidrawDevice for MockHidrawDevice {
         let len = self.buffer.len().min(CTRL_REPORT_SIZE);
         let mut buf = vec![0u8; CTRL_REPORT_SIZE];
         buf[..len].copy_from_slice(&self.buffer[..len]);
-        Ok(RawReport::from_bytes(buf, self.spec.clone()))
+        Ok(RawReport::from_bytes(buf, self.spec))
     }
 
     fn write_feature_report(&mut self, report: &RawReport) -> Result<(), QuadroError> {
@@ -48,7 +48,7 @@ impl HidrawDevice for MockHidrawDevice {
         let len = self.status_buffer.len().min(STATUS_REPORT_SIZE);
         let mut buf = vec![0u8; STATUS_REPORT_SIZE];
         buf[..len].copy_from_slice(&self.status_buffer[..len]);
-        Ok(RawStatusReport::from_bytes(buf, self.spec.clone()))
+        Ok(RawStatusReport::from_bytes(buf, self.spec))
     }
 }
 

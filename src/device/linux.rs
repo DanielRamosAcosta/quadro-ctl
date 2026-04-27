@@ -68,8 +68,6 @@ struct HidrawDevinfo {
 }
 
 const AQUACOMPUTER_VENDOR: u16 = 0x0c70;
-const QUADRO_PRODUCT: u16 = 0xf00d;
-const OCTO_PRODUCT: u16 = 0xf011;
 
 pub struct LinuxHidrawDevice {
     fd: RawFd,
@@ -258,7 +256,7 @@ impl HidrawDevice for LinuxHidrawDevice {
     fn read_feature_report(&mut self) -> Result<RawReport, QuadroError> {
         let buf = self.ioctl_read(self.spec.ctrl_report_id, self.spec.ctrl_report_size)
             .map_err(|e| QuadroError::ReportRead(Box::new(e)))?;
-        Ok(RawReport::from_bytes(buf, self.spec.clone()))
+        Ok(RawReport::from_bytes(buf, self.spec))
     }
 
     fn write_feature_report(&mut self, report: &RawReport) -> Result<(), QuadroError> {
@@ -308,7 +306,7 @@ impl HidrawDevice for LinuxHidrawDevice {
             )));
         }
         self.logger.info(&format!("[device] read {} bytes", ret));
-        Ok(RawStatusReport::from_bytes(buf, self.spec.clone()))
+        Ok(RawStatusReport::from_bytes(buf, self.spec))
     }
 }
 
@@ -362,7 +360,7 @@ pub fn find_device(logger: Box<dyn Logger>) -> Result<(LinuxHidrawDevice, Device
             if let Some(spec) = DeviceSpec::from_product_id(info.product as u16) {
                 logger.info(&format!("[device] found {} at {}", spec.kind.name(), path_str));
                 drop(device);
-                let device = LinuxHidrawDevice::open(path_str, logger, spec.clone())?;
+                let device = LinuxHidrawDevice::open(path_str, logger, spec)?;
                 return Ok((device, spec));
             }
         }

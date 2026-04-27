@@ -28,7 +28,7 @@ impl DeviceKind {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DeviceSpec {
     pub kind: DeviceKind,
     pub vendor_id: u16,

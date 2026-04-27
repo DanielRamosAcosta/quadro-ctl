@@ -1,4 +1,4 @@
-use crate::device::{DeviceSpec, HidrawDevice};
+use crate::device::HidrawDevice;
 use crate::error::QuadroError;
 
 use super::{DeviceFactory, StandardLogger};
