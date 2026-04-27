@@ -1,6 +1,8 @@
 mod mock;
+mod specs;
 
 pub use mock::MockHidrawDevice;
+pub use specs::{DeviceKind, DeviceSpec};
 
 use crate::error::QuadroError;
 use crate::protocol::{RawReport, RawStatusReport, RawVirtualSensorsReport};
