@@ -1,9 +1,9 @@
 use std::fs;
 use std::os::unix::io::RawFd;
 
-use crate::device::DeviceSpec;
+use crate::device::{DeviceKind, DeviceSpec};
 use crate::error::QuadroError;
-use crate::protocol::{RawReport, RawStatusReport, RawVirtualSensorsReport, CTRL_REPORT_ID, CTRL_REPORT_SIZE, SECONDARY_REPORT, SECONDARY_REPORT_ID, STATUS_REPORT_SIZE};
+use crate::protocol::{RawReport, RawStatusReport, RawVirtualSensorsReport, STATUS_REPORT_SIZE};
 use crate::services::Logger;
 use super::HidrawDevice;
 
@@ -75,6 +75,7 @@ pub struct LinuxHidrawDevice {
     fd: RawFd,
     usb: Option<UsbBulkDevice>,
     logger: Box<dyn Logger>,
+    spec: DeviceSpec,
 }
 
 struct UsbBulkDevice {
@@ -202,7 +203,7 @@ fn find_usb_device_path(vendor: u16, product: u16) -> Result<String, QuadroError
 }
 
 impl LinuxHidrawDevice {
-    pub fn open(path: &str, logger: Box<dyn Logger>) -> Result<Self, QuadroError> {
+    pub fn open(path: &str, logger: Box<dyn Logger>, spec: DeviceSpec) -> Result<Self, QuadroError> {
         logger.info(&format!("[device] opening {}", path));
         let c_path =
             std::ffi::CString::new(path).map_err(|e| QuadroError::InvalidDevicePath(e.to_string()))?;
@@ -213,7 +214,7 @@ impl LinuxHidrawDevice {
             return Err(QuadroError::DeviceOpen { path: path.to_string(), source: err });
         }
         logger.info(&format!("[device] opened {} -> fd={}", path, fd));
-        Ok(Self { fd, usb: None, logger })
+        Ok(Self { fd, usb: None, logger, spec })
     }
 
     fn ioctl_read(&self, report_id: u8, size: usize) -> Result<Vec<u8>, QuadroError> {
@@ -255,19 +256,19 @@ impl LinuxHidrawDevice {
 
 impl HidrawDevice for LinuxHidrawDevice {
     fn read_feature_report(&mut self) -> Result<RawReport, QuadroError> {
-        let buf = self.ioctl_read(CTRL_REPORT_ID, CTRL_REPORT_SIZE)
+        let buf = self.ioctl_read(self.spec.ctrl_report_id, self.spec.ctrl_report_size)
             .map_err(|e| QuadroError::ReportRead(Box::new(e)))?;
-        Ok(RawReport::from_bytes(buf))
+        Ok(RawReport::from_bytes(buf, self.spec.clone()))
     }
 
     fn write_feature_report(&mut self, report: &RawReport) -> Result<(), QuadroError> {
-        self.ioctl_write(CTRL_REPORT_ID, report.as_bytes())
+        self.ioctl_write(self.spec.ctrl_report_id, report.as_bytes())
             .map_err(|e| QuadroError::ReportWrite(Box::new(e)))?;
         Ok(())
     }
 
     fn commit(&mut self) -> Result<(), QuadroError> {
-        self.ioctl_write(SECONDARY_REPORT_ID, &SECONDARY_REPORT)
+        self.ioctl_write(self.spec.secondary_report_id, self.spec.secondary_report)
             .map_err(|e| QuadroError::ReportWrite(Box::new(e)))?;
         Ok(())
     }
@@ -275,7 +276,7 @@ impl HidrawDevice for LinuxHidrawDevice {
     fn write_virtual_sensors(&mut self, report: &RawVirtualSensorsReport) -> Result<(), QuadroError> {
         let data = report.as_bytes();
         if self.usb.is_none() {
-            let usb = UsbBulkDevice::open(AQUACOMPUTER_VENDOR, QUADRO_PRODUCT, self.logger.as_ref())
+            let usb = UsbBulkDevice::open(self.spec.vendor_id, self.spec.product_id, self.logger.as_ref())
                 .map_err(|e| QuadroError::ReportWrite(Box::new(e)))?;
             self.usb = Some(usb);
         }
@@ -307,7 +308,7 @@ impl HidrawDevice for LinuxHidrawDevice {
             )));
         }
         self.logger.info(&format!("[device] read {} bytes", ret));
-        Ok(RawStatusReport::from_bytes(buf))
+        Ok(RawStatusReport::from_bytes(buf, self.spec.clone()))
     }
 }
 
@@ -334,7 +335,8 @@ pub fn find_device(logger: Box<dyn Logger>) -> Result<(LinuxHidrawDevice, Device
             .to_str()
             .ok_or_else(|| QuadroError::InvalidDevicePath("non-utf8 hidraw path".into()))?;
 
-        let device = match LinuxHidrawDevice::open(path_str, Box::new(crate::NullLogger)) {
+        let temp_spec = DeviceSpec::for_device(DeviceKind::Quadro);
+        let device = match LinuxHidrawDevice::open(path_str, Box::new(crate::NullLogger), temp_spec) {
             Ok(d) => d,
             Err(e) => {
                 logger.info(&format!("[device] skip {}: {}", path_str, e));
@@ -360,7 +362,7 @@ pub fn find_device(logger: Box<dyn Logger>) -> Result<(LinuxHidrawDevice, Device
             if let Some(spec) = DeviceSpec::from_product_id(info.product as u16) {
                 logger.info(&format!("[device] found {} at {}", spec.kind.name(), path_str));
                 drop(device);
-                let device = LinuxHidrawDevice::open(path_str, logger)?;
+                let device = LinuxHidrawDevice::open(path_str, logger, spec.clone())?;
                 return Ok((device, spec));
             }
         }

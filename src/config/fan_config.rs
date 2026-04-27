@@ -13,6 +13,14 @@ pub enum FanLabel {
     Fan3,
     #[serde(rename = "fan4")]
     Fan4,
+    #[serde(rename = "fan5")]
+    Fan5,
+    #[serde(rename = "fan6")]
+    Fan6,
+    #[serde(rename = "fan7")]
+    Fan7,
+    #[serde(rename = "fan8")]
+    Fan8,
 }
 
 impl From<FanLabel> for FanId {
@@ -22,6 +30,10 @@ impl From<FanLabel> for FanId {
             FanLabel::Fan2 => FanId::Fan2,
             FanLabel::Fan3 => FanId::Fan3,
             FanLabel::Fan4 => FanId::Fan4,
+            FanLabel::Fan5 => FanId::Fan5,
+            FanLabel::Fan6 => FanId::Fan6,
+            FanLabel::Fan7 => FanId::Fan7,
+            FanLabel::Fan8 => FanId::Fan8,
         }
     }
 }

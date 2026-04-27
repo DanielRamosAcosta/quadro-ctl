@@ -19,14 +19,14 @@ pub fn write_be16(buffer: &mut [u8], offset: usize, value: u16) {
     buffer[offset + 1] = bytes[1];
 }
 
-pub fn apply_manual(buffer: &mut [u8], fan: FanId, percentage: CentiPercent) {
-    let base = fan.offset();
+pub fn apply_manual(buffer: &mut [u8], fan: FanId, percentage: CentiPercent, offsets: &[usize]) {
+    let base = fan.offset(offsets);
     buffer[base + FAN_MODE_OFFSET] = 0x00;
     write_be16(buffer, base + FAN_PWM_OFFSET, percentage.0);
 }
 
-pub fn apply_curve(buffer: &mut [u8], fan: FanId, curve_data: &CurveData) {
-    let base = fan.offset();
+pub fn apply_curve(buffer: &mut [u8], fan: FanId, curve_data: &CurveData, offsets: &[usize]) {
+    let base = fan.offset(offsets);
     buffer[base + FAN_MODE_OFFSET] = 0x02;
     write_be16(buffer, base + FAN_TEMP_SELECT_OFFSET, curve_data.sensor.value() as u16);
     for (i, t) in curve_data.temps.iter().enumerate() {
@@ -37,8 +37,8 @@ pub fn apply_curve(buffer: &mut [u8], fan: FanId, curve_data: &CurveData) {
     }
 }
 
-pub fn read_fan_mode(buffer: &[u8], fan: FanId) -> FanMode {
-    let base = fan.offset();
+pub fn read_fan_mode(buffer: &[u8], fan: FanId, offsets: &[usize]) -> FanMode {
+    let base = fan.offset(offsets);
     match buffer[base + FAN_MODE_OFFSET] {
         0x00 => FanMode::Manual,
         0x02 => FanMode::Curve,
@@ -46,13 +46,13 @@ pub fn read_fan_mode(buffer: &[u8], fan: FanId) -> FanMode {
     }
 }
 
-pub fn read_manual_pwm(buffer: &[u8], fan: FanId) -> CentiPercent {
-    let base = fan.offset();
+pub fn read_manual_pwm(buffer: &[u8], fan: FanId, offsets: &[usize]) -> CentiPercent {
+    let base = fan.offset(offsets);
     CentiPercent(read_be16(buffer, base + FAN_PWM_OFFSET))
 }
 
-pub fn read_curve(buffer: &[u8], fan: FanId) -> CurveData {
-    let base = fan.offset();
+pub fn read_curve(buffer: &[u8], fan: FanId, offsets: &[usize]) -> CurveData {
+    let base = fan.offset(offsets);
     let sensor_raw = read_be16(buffer, base + FAN_TEMP_SELECT_OFFSET) as u8;
     let sensor = SensorIndex::new(sensor_raw).unwrap_or_else(|_| {
         SensorIndex::new(0).expect("0 is always valid")

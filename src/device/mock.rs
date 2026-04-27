@@ -1,12 +1,24 @@
+use crate::device::{DeviceKind, DeviceSpec};
 use crate::error::QuadroError;
 use crate::protocol::{RawReport, RawStatusReport, RawVirtualSensorsReport, CTRL_REPORT_ID, CTRL_REPORT_SIZE, SECONDARY_REPORT, SECONDARY_REPORT_ID, STATUS_REPORT_SIZE, VIRTUAL_SENSORS_REPORT_ID};
 use super::HidrawDevice;
 
-#[derive(Default)]
 pub struct MockHidrawDevice {
     pub buffer: Vec<u8>,
     pub status_buffer: Vec<u8>,
     pub writes: Vec<(u8, Vec<u8>)>,
+    pub spec: DeviceSpec,
+}
+
+impl Default for MockHidrawDevice {
+    fn default() -> Self {
+        Self {
+            buffer: Vec::new(),
+            status_buffer: Vec::new(),
+            writes: Vec::new(),
+            spec: DeviceSpec::for_device(DeviceKind::Quadro),
+        }
+    }
 }
 
 impl HidrawDevice for MockHidrawDevice {
@@ -14,7 +26,7 @@ impl HidrawDevice for MockHidrawDevice {
         let len = self.buffer.len().min(CTRL_REPORT_SIZE);
         let mut buf = vec![0u8; CTRL_REPORT_SIZE];
         buf[..len].copy_from_slice(&self.buffer[..len]);
-        Ok(RawReport::from_bytes(buf))
+        Ok(RawReport::from_bytes(buf, self.spec.clone()))
     }
 
     fn write_feature_report(&mut self, report: &RawReport) -> Result<(), QuadroError> {
@@ -36,7 +48,7 @@ impl HidrawDevice for MockHidrawDevice {
         let len = self.status_buffer.len().min(STATUS_REPORT_SIZE);
         let mut buf = vec![0u8; STATUS_REPORT_SIZE];
         buf[..len].copy_from_slice(&self.status_buffer[..len]);
-        Ok(RawStatusReport::from_bytes(buf))
+        Ok(RawStatusReport::from_bytes(buf, self.spec.clone()))
     }
 }
 
@@ -76,7 +88,7 @@ mod tests {
     #[test]
     fn write_records_report_data() {
         let mut device = MockHidrawDevice::default();
-        let report = RawReport::from_bytes(vec![0xAA; CTRL_REPORT_SIZE]);
+        let report = RawReport::from_bytes(vec![0xAA; CTRL_REPORT_SIZE], DeviceSpec::for_device(DeviceKind::Quadro));
 
         device.write_feature_report(&report).unwrap();
 
